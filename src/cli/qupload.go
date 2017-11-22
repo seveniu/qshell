@@ -3,11 +3,13 @@ package cli
 import (
 	"encoding/json"
 	"flag"
-	"github.com/astaxie/beego/logs"
 	"io/ioutil"
 	"os"
 	"qshell"
 	"strconv"
+	"time"
+
+	"github.com/astaxie/beego/logs"
 )
 
 func QiniuUpload(cmd string, params ...string) {
@@ -89,7 +91,11 @@ func QiniuUpload(cmd string, params ...string) {
 		}
 
 		uploadConfig.IsHostFileSpecified = IsHostFileSpecified
-		qshell.QiniuUpload(int(threadCount), &uploadConfig, &fileExporter)
+		for {
+			qshell.QiniuUpload(int(threadCount), &uploadConfig, &fileExporter)
+			time.Sleep(10 * time.Second)
+			logs.Info("restart upload ")
+		}
 	} else {
 		CmdHelp(cmd)
 	}

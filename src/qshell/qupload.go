@@ -4,18 +4,10 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/astaxie/beego/logs"
-	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/syndtr/goleveldb/leveldb/opt"
 	"net"
 	"net/http"
 	"os"
 	"path/filepath"
-	"qiniu/api.v6/auth/digest"
-	"qiniu/api.v6/conf"
-	fio "qiniu/api.v6/io"
-	rio "qiniu/api.v6/resumable/io"
-	"qiniu/api.v6/rs"
 	"qiniu/rpc"
 	"runtime"
 	"strconv"
@@ -23,6 +15,15 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/astaxie/beego/logs"
+	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/opt"
+	"qiniu/api.v6/auth/digest"
+	"qiniu/api.v6/conf"
+	fio "qiniu/api.v6/io"
+	rio "qiniu/api.v6/resumable/io"
+	"qiniu/api.v6/rs"
 )
 
 /*
@@ -430,6 +431,15 @@ func QiniuUpload(threadCount int, uploadConfig *UploadConfig, exporter *FileExpo
 			uploadFileKey, localFileLastModified, localFileSize)
 		if !needToUpload {
 			//no need to upload
+			//delete on success
+			if uploadConfig.DeleteOnSuccess {
+				deleteErr := os.Remove(localFilePath)
+				if deleteErr != nil {
+					logs.Error("Delete `%s` on upload success error due to `%s`", localFilePath, deleteErr)
+				} else {
+					logs.Info("Delete `%s` on upload success done", localFilePath)
+				}
+			}
 			continue
 		}
 
@@ -487,11 +497,11 @@ func QiniuUpload(threadCount int, uploadConfig *UploadConfig, exporter *FileExpo
 	logs.Info("----------------------------------------")
 	fmt.Println("\nSee upload log at path", uploadConfig.LogFile)
 
-	if failureFileCount > 0 {
-		os.Exit(STATUS_ERROR)
-	} else {
-		os.Exit(STATUS_OK)
-	}
+	// if failureFileCount > 0 {
+	// 	os.Exit(STATUS_ERROR)
+	// } else {
+	// 	os.Exit(STATUS_OK)
+	// }
 }
 
 func prepareCacheFileList(cacheResultName, cacheCountName, srcDir string, rescanLocal bool) (totalFileCount int64, cacheErr error) {
